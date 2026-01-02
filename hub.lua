@@ -1,30 +1,32 @@
 print("Aqwoz Hub: Script connection started...")
 
 local function loadLibrary()
-    print("Aqwoz Hub: Attempting to download Orion Library...")
-    local success, result = pcall(function()
-        return game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source')
-    end)
-    
-    if not success then
-        warn("Aqwoz Hub: HttpGet Failed! Error: " .. tostring(result))
-        return nil
-    end
-    
-    if not result or #result == 0 then
-        warn("Aqwoz Hub: HttpGet returned empty result!")
-        return nil
-    end
+    local libraryUrls = {
+        "https://raw.githubusercontent.com/jensonhirst/Orion/main/source",
+        "https://raw.githubusercontent.com/shlexware/Orion/main/source",
+        "https://raw.githubusercontent.com/Seven7-lua/Roblox/refs/heads/main/Librarys/Orion/Orion.lua"
+    }
 
-    print("Aqwoz Hub: Download successful. Compiling... Size: " .. #result)
-    local func, err = loadstring(result)
-    if not func then
-        warn("Aqwoz Hub: Compilation Failed! Error: " .. tostring(err))
-        warn("First 100 chars: " .. string.sub(result, 1, 100))
-        return nil
+    for i, url in ipairs(libraryUrls) do
+        print("Aqwoz Hub: Attempting to download Orion Library from Mirror " .. i .. "...")
+        local success, result = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success and result and #result > 0 then
+            print("Aqwoz Hub: Download successful from Mirror " .. i .. ". Compiling...")
+            local func, err = loadstring(result)
+            if func then
+                return func()
+            else
+                warn("Aqwoz Hub: Compilation Failed for Mirror " .. i .. "! Error: " .. tostring(err))
+            end
+        else
+            warn("Aqwoz Hub: Failed to fetch from Mirror " .. i)
+        end
     end
-
-    return func()
+    
+    return nil
 end
 
 local OrionLib = loadLibrary()
