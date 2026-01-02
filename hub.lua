@@ -1,17 +1,35 @@
+print("Aqwoz Hub: Script connection started...")
+
 local function loadLibrary()
+    print("Aqwoz Hub: Attempting to download Orion Library...")
     local success, result = pcall(function()
         return game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source')
     end)
-    if not success or not result then
-        warn("Failed to load Orion Library! Check your internet connection or executor's httpget support.")
+    
+    if not success then
+        warn("Aqwoz Hub: HttpGet Failed! Error: " .. tostring(result))
         return nil
     end
-    return loadstring(result)()
+    
+    if not result or #result == 0 then
+        warn("Aqwoz Hub: HttpGet returned empty result!")
+        return nil
+    end
+
+    print("Aqwoz Hub: Download successful. Compiling... Size: " .. #result)
+    local func, err = loadstring(result)
+    if not func then
+        warn("Aqwoz Hub: Compilation Failed! Error: " .. tostring(err))
+        warn("First 100 chars: " .. string.sub(result, 1, 100))
+        return nil
+    end
+
+    return func()
 end
 
 local OrionLib = loadLibrary()
 if not OrionLib then
-    -- Fallback/Error Notification if possible without lib, or just return
+    warn("Aqwoz Hub Critical Error: Orion Library could not be loaded. Script stopped.")
     return
 end
 
