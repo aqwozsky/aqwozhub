@@ -20,6 +20,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local vim = game:GetService("VirtualInputManager")
 
 local localPlayer = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
@@ -156,10 +157,9 @@ local function autoClick()
                 -- User provided code used `mouse1click()`. We assume executor supports it.
                 if mouse1click then
                     mouse1click()
-                elseif vim then -- VirtualInputManager fallback
-                     -- vim:SendMouseButtonEvent(0, 0, 0, true, game, 1) -- Click
-                     -- vim:SendMouseButtonEvent(0, 0, 0, false, game, 1) 
-                     -- Keeping user's mouse1click since they said "WORKS ON ALL EXECUTORS"
+                elseif vim then
+                     vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                     vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                 end
             end
         else
