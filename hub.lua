@@ -1,4 +1,19 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local function loadLibrary()
+    local success, result = pcall(function()
+        return game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source')
+    end)
+    if not success or not result then
+        warn("Failed to load Orion Library! Check your internet connection or executor's httpget support.")
+        return nil
+    end
+    return loadstring(result)()
+end
+
+local OrionLib = loadLibrary()
+if not OrionLib then
+    -- Fallback/Error Notification if possible without lib, or just return
+    return
+end
 
 -- Configuration
 local Config = {
