@@ -410,8 +410,9 @@ local function autoClick()
                 if mouse1click then
                     mouse1click()
                 elseif vim then
-                     vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                     vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                     local mousePos = UserInputService:GetMouseLocation()
+                     vim:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, true, game, 1)
+                     vim:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
                 end
             end
         else
