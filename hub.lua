@@ -383,12 +383,14 @@ end
 -- Update Visuals
 local function updateESP()
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-             -- Simple Box/Billboard update logic reused
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
              local espName = player.Name .. "_ESP_Billboard"
+             local boxName = player.Name .. "_ESP_Box"
              local head = player.Character.Head
-             local billboard = head:FindFirstChild(espName)
+             local root = player.Character.HumanoidRootPart
              
+             -- BILLBOARD (Names/Health)
+             local billboard = head:FindFirstChild(espName)
              if not billboard and Config.Visuals.Enabled then
                  billboard = Instance.new("BillboardGui")
                  billboard.Name = espName
@@ -405,13 +407,26 @@ local function updateESP()
                  txt.Text = player.Name
              end
              
+             -- BOX
+             local existingBox = ESP_Folder:FindFirstChild(boxName)
+             if not existingBox and Config.Visuals.Enabled and Config.Visuals.Boxes then
+                 existingBox = Instance.new("BoxHandleAdornment")
+                 existingBox.Name = boxName
+                 existingBox.Parent = ESP_Folder
+                 existingBox.Adornee = player.Character
+                 existingBox.AlwaysOnTop = true
+                 existingBox.ZIndex = 5
+                 existingBox.Size = Vector3.new(4, 5, 1)
+                 existingBox.Transparency = 0.5
+                 existingBox.Color3 = Color3.fromRGB(0, 170, 255)
+             end
+
+             local show = Config.Visuals.Enabled
+             if Config.Visuals.TeamCheck and isTeammate(player) then show = false end
+             
+             -- Update Billboard Visibility
              if billboard then
-                 local show = Config.Visuals.Enabled
-                 if Config.Visuals.TeamCheck and isTeammate(player) then show = false end
-                 
                  billboard.Enabled = show and Config.Visuals.Names
-                 
-                 -- Health Color
                  if show and Config.Visuals.Health then
                       local hum = player.Character:FindFirstChild("Humanoid")
                       if hum then
@@ -421,29 +436,38 @@ local function updateESP()
                  else
                       billboard.TextLabel.TextColor3 = Color3.new(1, 1, 1)
                  end
-                 
-                 -- Box (Simple adornment management would go here, simplified for custom script stability)
              end
+             
+             -- Update Box Visibility
+             if existingBox then
+                 existingBox.Visible = show and Config.Visuals.Boxes
+                 existingBox.Adornee = player.Character -- ensure it sticks if respawned
+             end
+        else
+            -- Cleanup loose boxes for invalid players
+            local boxName = player.Name .. "_ESP_Box"
+            local existingBox = ESP_Folder:FindFirstChild(boxName)
+            if existingBox then existingBox:Destroy() end
         end
     end
 end
 
 -- Connections
 UserInputService.InputBegan:Connect(function(input, isProcessed)
-    -- Don't block inputs if interacting with our GUI
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         if not isLeftMouseDown then
             isLeftMouseDown = true
-            if Config.SilentAim and not isProcessed then autoClick() end -- Check isProcessed to avoid shooting when clicking UI
+            -- Only fire if silent aim is valid and not clicking UI
+            if Config.SilentAim and not isProcessed then 
+                 autoClick() 
+            end 
         end
     elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-         -- Right click usually safe to ignore isProcessed for aim
         if not isRightMouseDown then
             isRightMouseDown = true
             if Config.SilentAim then autoClick() end
         end
     elseif input.KeyCode == Enum.KeyCode.RightControl then
-        -- Toggle UI
         if CoreGui:FindFirstChild("AqwozHub") then
             CoreGui.AqwozHub.Enabled = not CoreGui.AqwozHub.Enabled
         elseif localPlayer.PlayerGui:FindFirstChild("AqwozHub") then
@@ -460,12 +484,22 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-RunService.Heartbeat:Connect(function()
-    if Config.Aimlock and not isLobbyVisible() then
-         targetPlayer = getClosestPlayerToMouse()
-         if targetPlayer then lockCameraToHead() end
+-- Aimlock Loop (RenderStepped for smoother camera)
+RunService.RenderStepped:Connect(function()
+    if Config.Aimlock then
+         -- Constant check to keep locking current target
+         if not targetPlayer or (targetPlayer and (not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("Head"))) then
+             targetPlayer = getClosestPlayerToMouse()
+         end
+         
+         if targetPlayer then 
+             lockCameraToHead() 
+         end
     end
-    
+end)
+
+-- Visuals Loop
+RunService.Heartbeat:Connect(function()
     if Config.Visuals.Enabled then
         updateESP()
     end
