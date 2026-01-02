@@ -218,7 +218,7 @@ local Window = Rayfield:CreateWindow({
    LoadingTitle = "Loading Aqwoz Hub...",
    LoadingSubtitle = "By Aqwoz",
    ConfigurationSaving = {
-      Enabled = true,
+      Enabled = false,
       FolderName = "AqwozHub",
       FileName = "Configuration"
    },
