@@ -290,7 +290,7 @@ local function create_ui()
 
     -- Visuals Items
     CreateToggle(VisualsPage, "Enabled", function(val) Config.Visuals.Enabled = val end, false)
-    CreateToggle(VisualsPage, "Chams (Highlights)", function(val) Config.Visuals.Boxes = val end, false)
+    CreateToggle(VisualsPage, "2D Box + Health", function(val) Config.Visuals.Boxes = val end, false)
     CreateToggle(VisualsPage, "Names", function(val) Config.Visuals.Names = val end, false)
     CreateToggle(VisualsPage, "Health Based Color", function(val) Config.Visuals.Health = val end, false)
     CreateToggle(VisualsPage, "Hide Teammates", function(val) Config.Visuals.TeamCheck = val end, false)
@@ -420,73 +420,117 @@ local function autoClick()
     end)
 end
 
+-- Clean ESP Function
+local function clearESP(player)
+    if player.Character then
+        local esp = player.Character:FindFirstChild("AqwozESP")
+        if esp then esp:Destroy() end
+    end
+end
+
 -- Update Visuals
 local function updateESP()
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("HumanoidRootPart") then
-             local espName = player.Name .. "_ESP_Billboard"
-             local boxName = player.Name .. "_ESP_Box"
-             local head = player.Character.Head
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") then
              local root = player.Character.HumanoidRootPart
+             local hum = player.Character.Humanoid
              
-             -- BILLBOARD (Names/Health)
-             local billboard = head:FindFirstChild(espName)
-             if not billboard and Config.Visuals.Enabled then
-                 billboard = Instance.new("BillboardGui")
-                 billboard.Name = espName
-                 billboard.Size = UDim2.new(0, 100, 0, 50)
-                 billboard.StudsOffset = Vector3.new(0, 2, 0)
-                 billboard.AlwaysOnTop = true
-                 billboard.Parent = head
+             -- Master Advertisement
+             local espGui = root:FindFirstChild("AqwozESP")
+             if not espGui and Config.Visuals.Enabled then
+                 espGui = Instance.new("BillboardGui")
+                 espGui.Name = "AqwozESP"
+                 espGui.Adornee = root
+                 espGui.Size = UDim2.new(4, 0, 5.5, 0) -- Bounds size in studs
+                 espGui.StudsOffset = Vector3.new(0, 0, 0)
+                 espGui.AlwaysOnTop = true
+                 espGui.Parent = root
                  
-                 local txt = Instance.new("TextLabel", billboard)
-                 txt.BackgroundTransparency = 1
-                 txt.Size = UDim2.new(1, 0, 1, 0)
-                 txt.TextStrokeTransparency = 0.5
-                 txt.TextStrokeColor3 = Color3.new(0,0,0)
-                 txt.TextColor3 = Color3.new(1, 1, 1)
-                 txt.Font = Enum.Font.GothamBold -- Modern font
-                 txt.TextSize = 14
-                 txt.Text = player.Name
+                 -- Main Box Frame
+                 local box = Instance.new("Frame")
+                 box.Name = "Box"
+                 box.Parent = espGui
+                 box.Size = UDim2.new(1, 0, 1, 0)
+                 box.BackgroundTransparency = 1
+                 
+                 -- UIStroke for Box (The Modern Look)
+                 local stroke = Instance.new("UIStroke")
+                 stroke.Parent = box
+                 stroke.Color = Color3.fromRGB(0, 170, 255)
+                 stroke.Thickness = 1.5
+                 stroke.Transparency = 0
+                 
+                 -- Health Bar Background
+                 local healthBg = Instance.new("Frame")
+                 healthBg.Name = "HealthBg"
+                 healthBg.Parent = box
+                 healthBg.BackgroundColor3 = Color3.new(0,0,0)
+                 healthBg.BorderSizePixel = 0
+                 healthBg.Position = UDim2.new(-0.1, 0, 0, 0) -- Left side
+                 healthBg.Size = UDim2.new(0.05, 0, 1, 0)
+                 
+                 -- Health Bar Fill
+                 local healthFill = Instance.new("Frame")
+                 healthFill.Name = "HealthFill"
+                 healthFill.Parent = healthBg
+                 healthFill.BackgroundColor3 = Color3.new(0, 1, 0) -- Green
+                 healthFill.BorderSizePixel = 0
+                 healthFill.Size = UDim2.new(1, 0, 1, 0) -- Will update scale Y
+                 healthFill.Position = UDim2.new(0,0,1,0)
+                 healthFill.AnchorPoint = Vector2.new(0,1) -- Grow upwards
+                 
+                 -- Name Label
+                 local nameLab = Instance.new("TextLabel")
+                 nameLab.Name = "NameLabel"
+                 nameLab.Parent = box
+                 nameLab.BackgroundTransparency = 1
+                 nameLab.Position = UDim2.new(0, 0, -0.2, 0) -- Top
+                 nameLab.Size = UDim2.new(1, 0, 0.2, 0)
+                 nameLab.Font = Enum.Font.GothamBold
+                 nameLab.Text = player.Name
+                 nameLab.TextColor3 = Color3.new(1, 1, 1)
+                 nameLab.TextSize = 12
+                 nameLab.TextStrokeTransparency = 0.5
              end
              
-             -- HIGHLIGHT (Chams)
-             local existingHighlight = player.Character:FindFirstChild(boxName)
-             if not existingHighlight and Config.Visuals.Enabled and Config.Visuals.Boxes then
-                 existingHighlight = Instance.new("Highlight")
-                 existingHighlight.Name = boxName
-                 existingHighlight.Adornee = player.Character
-                 existingHighlight.Parent = player.Character
-                 existingHighlight.FillColor = Color3.fromRGB(0, 170, 255)
-                 existingHighlight.FillTransparency = 0.5
-                 existingHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                 existingHighlight.OutlineTransparency = 0
-             end
+             if espGui then
+                 local show = Config.Visuals.Enabled
+                 if Config.Visuals.TeamCheck and isTeammate(player) then show = false end
+                 
+                 espGui.Enabled = show
+                 
+                 if show then
+                     -- Toggle Components
+                     local box = espGui:FindFirstChild("Box")
+                     local stroke = box:FindFirstChild("UIStroke")
+                     local nameLab = box:FindFirstChild("NameLabel")
+                     local healthBg = box:FindFirstChild("HealthBg")
+                     
+                     -- Box Visibility
+                     stroke.Enabled = Config.Visuals.Boxes
+                     
+                     -- Name Visibility
+                     nameLab.Visible = Config.Visuals.Names
+                     if Config.Visuals.Health then
+                         nameLab.TextColor3 = Color3.new(1,1,1) -- Reset if formerly health colored
+                     end
 
-             local show = Config.Visuals.Enabled
-             if Config.Visuals.TeamCheck and isTeammate(player) then show = false end
-             
-             -- Update Billboard Visibility
-             if billboard then
-                 billboard.Enabled = show and Config.Visuals.Names
-                 if show and Config.Visuals.Health then
-                      local hum = player.Character:FindFirstChild("Humanoid")
-                      if hum then
-                          local hp = hum.Health / hum.MaxHealth
-                          billboard.TextLabel.TextColor3 = Color3.fromHSV(hp * 0.3, 1, 1)
-                      end
-                 else
-                      billboard.TextLabel.TextColor3 = Color3.new(1, 1, 1)
+                     -- Health Bar Logic
+                     local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                     
+                     if Config.Visuals.Health then
+                         -- Show bar if Health enabled (or we can separate bar vs health text color, but keeping simple)
+                         healthBg.Visible = true 
+                         local fill = healthBg:FindFirstChild("HealthFill")
+                         fill.Size = UDim2.new(1, 0, healthPercent, 0)
+                         fill.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1) -- Red to Green gradient
+                     else
+                         healthBg.Visible = false
+                     end
                  end
              end
-             
-             -- Update Highlight Visibility
-             if existingHighlight then
-                 existingHighlight.Enabled = show and Config.Visuals.Boxes
-             end
         else
-            -- Cleanup logic remains handled by parent garbage collection mostly, 
-            -- but Highlights stay on character so they die with character.
+            clearESP(player)
         end
     end
 end
