@@ -1,39 +1,4 @@
-print("Aqwoz Hub: Script connection started...")
-
-local function loadLibrary()
-    local libraryUrls = {
-        "https://raw.githubusercontent.com/jensonhirst/Orion/main/source",
-        "https://raw.githubusercontent.com/shlexware/Orion/main/source",
-        "https://raw.githubusercontent.com/Seven7-lua/Roblox/refs/heads/main/Librarys/Orion/Orion.lua"
-    }
-
-    for i, url in ipairs(libraryUrls) do
-        print("Aqwoz Hub: Attempting to download Orion Library from Mirror " .. i .. "...")
-        local success, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-        
-        if success and result and #result > 0 then
-            print("Aqwoz Hub: Download successful from Mirror " .. i .. ". Compiling...")
-            local func, err = loadstring(result)
-            if func then
-                return func()
-            else
-                warn("Aqwoz Hub: Compilation Failed for Mirror " .. i .. "! Error: " .. tostring(err))
-            end
-        else
-            warn("Aqwoz Hub: Failed to fetch from Mirror " .. i)
-        end
-    end
-    
-    return nil
-end
-
-local OrionLib = loadLibrary()
-if not OrionLib then
-    warn("Aqwoz Hub Critical Error: Orion Library could not be loaded. Script stopped.")
-    return
-end
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Configuration
 local Config = {
@@ -45,7 +10,7 @@ local Config = {
         Boxes = false,
         Names = false,
         Health = false,
-        TeamCheck = false -- Visuals team check
+        TeamCheck = false
     },
     Whitelist = {}
 }
@@ -68,36 +33,8 @@ local autoClickConnection = nil
 local ESP_Folder = Instance.new("Folder", Workspace)
 ESP_Folder.Name = "AqwozHub_ESP"
 
--- Theme & Window
-local Window = OrionLib:MakeWindow({
-    Name = "Aqwoz Hub",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "AqwozHub",
-    IntroEnabled = true,
-    IntroText = "Aqwoz Hub",
-    -- Blue and Black Theme
-    IntroIcon = "rbxassetid://6034926597", -- Generic premium icon, user can change
-    Icon = "rbxassetid://6034926597",
-})
-
--- Attempts to set a custom theme or colors if library supports deep customization, 
--- but Orion has specific built-in themes. We'll use "Dark" and force some colors if possible, 
--- or rely on the user to replace the MainSource for the background image.
-
--- Placeholder for Background Image. 
--- User must check their executor's workspace or upload to Roblox.
--- Since we can't upload, we use a placeholder Asset ID.
--- Replace with proper Asset ID: "rbxassetid://YOUR_ID_HERE"
-OrionLib.Flags["Orion_Background_Image"] = "rbxassetid://0" 
--- Note without a direct "Image" property exposed in MakeWindow for background in all Orion versions,
--- we often rely on the UI Library's default dark theme which fits "Black".
--- We will proceed with the "Dark" theme which is predominantly black/grey.
-
 -- Functions
-
 local function isLobbyVisible()
-    -- User provided specific check
     pcall(function() 
         if localPlayer.PlayerGui.MainGui.MainFrame.Lobby.Currency.Visible == true then
             return true
@@ -154,14 +91,12 @@ end
 local function lockCameraToHead()
     if not Config.Aimlock then return end
     
-    -- Recalculate target if current one is invalid
     if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("Head") then
         targetPlayer = getClosestPlayerToMouse()
     end
 
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") then
         local head = targetPlayer.Character.Head
-        -- Still valid?
         if isTeammate(targetPlayer) or isWhitelisted(targetPlayer) then 
             targetPlayer = nil 
             return 
@@ -175,7 +110,6 @@ local function lockCameraToHead()
     end
 end
 
--- Silent Aim Auto Click
 local function autoClick()
     if autoClickConnection then
         autoClickConnection:Disconnect()
@@ -188,8 +122,6 @@ local function autoClick()
 
         if isLeftMouseDown or isRightMouseDown then
             if not isLobbyVisible() then
-                -- In standard scripts mouse1click is often available, or we use VirtualInputManager
-                -- User provided code used `mouse1click()`. We assume executor supports it.
                 if mouse1click then
                     mouse1click()
                 elseif vim then
@@ -203,7 +135,7 @@ local function autoClick()
     end)
 end
 
--- ESP Functions
+-- ESP Functions (Same as before)
 local function createESP(player)
     if player == localPlayer then return end
 
@@ -225,23 +157,15 @@ local function createESP(player)
 
     local Box = Instance.new("BoxHandleAdornment", ESP_Folder)
     Box.Adornee = player.Character
-    Box.Size = Vector3.new(4, 5, 1) -- Approximate size
+    Box.Size = Vector3.new(4, 5, 1)
     Box.SizeRelativeOffset = Vector3.new(0, 0, 0)
     Box.Transparency = 0.5
-    Box.Color3 = Color3.fromRGB(0, 0, 255) -- Blue
+    Box.Color3 = Color3.fromRGB(0, 100, 255)
     Box.AlwaysOnTop = true
     Box.ZIndex = 5
     Box.Visible = false
     
-    -- Store references to update visibility
-    local espData = {
-        Billboard = Billboard,
-        NameLabel = NameLabel,
-        Box = Box,
-        Player = player
-    }
-    
-    return espData
+    return {Billboard = Billboard, NameLabel = NameLabel, Box = Box, Player = player}
 end
 
 local ESP_Table = {}
@@ -267,12 +191,11 @@ local function updateESP()
                  data.NameLabel.Visible = show and Config.Visuals.Names
                  
                  if show then
-                    -- Update Box Size/Pos if needed, or Health color
                     if Config.Visuals.Health then
                         local hum = player.Character:FindFirstChildOfClass("Humanoid")
                         if hum then
                             local hpPercent = hum.Health / hum.MaxHealth
-                            data.NameLabel.TextColor3 = Color3.fromHSV(hpPercent * 0.3, 1, 1) -- Red to Green
+                            data.NameLabel.TextColor3 = Color3.fromHSV(hpPercent * 0.3, 1, 1)
                         end
                     else
                         data.NameLabel.TextColor3 = Color3.new(1, 1, 1)
@@ -289,126 +212,146 @@ local function updateESP()
     end
 end
 
-
--- UI Setup
-
-local CombatTab = Window:MakeTab({
-	Name = "Combat",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
+-- Rayfield UI Window
+local Window = Rayfield:CreateWindow({
+   Name = "Aqwoz Hub",
+   LoadingTitle = "Loading Aqwoz Hub...",
+   LoadingSubtitle = "By Aqwoz",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "AqwozHub",
+      FileName = "Configuration"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink", 
+      RememberJoins = true 
+   },
+   KeySystem = false,
 })
 
-CombatTab:AddToggle({
-	Name = "Silent Aim (Auto-Shoot)",
-	Default = false,
-	Callback = function(Value)
-		Config.SilentAim = Value
-	end    
+-- Combat Tab
+local CombatTab = Window:CreateTab("Combat", 4483345998)
+
+CombatTab:CreateToggle({
+   Name = "Silent Aim (Auto-Shoot)",
+   CurrentValue = false,
+   Flag = "SilentAim", 
+   Callback = function(Value)
+        Config.SilentAim = Value
+   end,
 })
 
-CombatTab:AddToggle({
-	Name = "Aimlock (Camera Lock)",
-	Default = false,
-	Callback = function(Value)
-		Config.Aimlock = Value
+CombatTab:CreateToggle({
+   Name = "Aimlock (Camera Lock)",
+   CurrentValue = false,
+   Flag = "Aimlock", 
+   Callback = function(Value)
+        Config.Aimlock = Value
         if not Value then targetPlayer = nil end
-	end    
+   end,
 })
 
-CombatTab:AddToggle({
-	Name = "Team Check",
-	Default = false,
-	Callback = function(Value)
-		Config.TeamCheck = Value
-	end    
+CombatTab:CreateToggle({
+   Name = "Team Check",
+   CurrentValue = false,
+   Flag = "TeamCheck", 
+   Callback = function(Value)
+        Config.TeamCheck = Value
+   end,
 })
 
--- Whitelist UI
-local WhitelistTab = Window:MakeTab({
-	Name = "Whitelist",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
+-- Whitelist Tab
+local WhitelistTab = Window:CreateTab("Whitelist", 4483345998)
 
 local whitelistInput = ""
-WhitelistTab:AddTextbox({
-	Name = "Player Name",
-	Default = "",
-	TextDisappear = true,
-	Callback = function(Value)
-		whitelistInput = Value
-	end	  
+WhitelistTab:CreateInput({
+   Name = "Player Name",
+   PlaceholderText = "Enter Name",
+   RemoveTextAfterFocusLost = true,
+   Callback = function(Text)
+        whitelistInput = Text
+   end,
 })
 
-WhitelistTab:AddButton({
-	Name = "Add to Whitelist",
-	Callback = function()
+WhitelistTab:CreateButton({
+   Name = "Add to Whitelist",
+   Callback = function()
       if whitelistInput ~= "" then
           table.insert(Config.Whitelist, whitelistInput)
-          OrionLib:MakeNotification({Name = "Whitelist", Content = "Added " .. whitelistInput, Image = "rbxassetid://4483345998", Time = 5})
+          Rayfield:Notify({
+             Title = "Whitelist",
+             Content = "Added " .. whitelistInput,
+             Duration = 3,
+             Image = 4483345998,
+          })
       end
-  	end    
+   end,
 })
 
-WhitelistTab:AddButton({
-	Name = "Clear Whitelist",
-	Callback = function()
+WhitelistTab:CreateButton({
+   Name = "Clear Whitelist",
+   Callback = function()
       Config.Whitelist = {}
-      OrionLib:MakeNotification({Name = "Whitelist", Content = "Cleared Whitelist", Image = "rbxassetid://4483345998", Time = 5})
-  	end    
+      Rayfield:Notify({
+         Title = "Whitelist",
+         Content = "Cleared Whitelist",
+         Duration = 3,
+         Image = 4483345998,
+      })
+   end,
+})
+
+-- Visuals Tab
+local VisualsTab = Window:CreateTab("Visuals", 4483345998)
+
+VisualsTab:CreateToggle({
+   Name = "Enable Visuals",
+   CurrentValue = false,
+   Flag = "VisualsEnabled", 
+   Callback = function(Value)
+        Config.Visuals.Enabled = Value
+   end,
+})
+
+VisualsTab:CreateToggle({
+   Name = "Boxes",
+   CurrentValue = false,
+   Flag = "VisualsBoxes", 
+   Callback = function(Value)
+        Config.Visuals.Boxes = Value
+   end,
+})
+
+VisualsTab:CreateToggle({
+   Name = "Names",
+   CurrentValue = false,
+   Flag = "VisualsNames", 
+   Callback = function(Value)
+        Config.Visuals.Names = Value
+   end,
+})
+
+VisualsTab:CreateToggle({
+   Name = "Health Color",
+   CurrentValue = false,
+   Flag = "VisualsHealth", 
+   Callback = function(Value)
+        Config.Visuals.Health = Value
+   end,
+})
+
+VisualsTab:CreateToggle({
+   Name = "Visuals Team Check",
+   CurrentValue = false,
+   Flag = "VisualsTeamCheck", 
+   Callback = function(Value)
+        Config.Visuals.TeamCheck = Value
+   end,
 })
 
 
--- Visuals UI
-local VisualsTab = Window:MakeTab({
-	Name = "Visuals",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
-
-VisualsTab:AddToggle({
-	Name = "Enable Visuals",
-	Default = false,
-	Callback = function(Value)
-		Config.Visuals.Enabled = Value
-	end    
-})
-
-VisualsTab:AddToggle({
-	Name = "Boxes",
-	Default = false,
-	Callback = function(Value)
-		Config.Visuals.Boxes = Value
-	end    
-})
-
-VisualsTab:AddToggle({
-	Name = "Names",
-	Default = false,
-	Callback = function(Value)
-		Config.Visuals.Names = Value
-	end    
-})
-
-VisualsTab:AddToggle({
-	Name = "Health Color",
-	Default = false,
-	Callback = function(Value)
-		Config.Visuals.Health = Value
-	end    
-})
-
-VisualsTab:AddToggle({
-	Name = "Visuals Team Check",
-	Default = false,
-	Callback = function(Value)
-		Config.Visuals.TeamCheck = Value
-	end    
-})
-
-
--- Main Logic Connections
-
+-- Logic Connections (Input & Loops)
 UserInputService.InputBegan:Connect(function(input, isProcessed)
     if isProcessed then return end
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -434,7 +377,6 @@ end)
 
 RunService.Heartbeat:Connect(function()
     if not isLobbyVisible() then
-        -- Handle Aimlock
         if Config.Aimlock then
              targetPlayer = getClosestPlayerToMouse()
              if targetPlayer then
@@ -442,11 +384,9 @@ RunService.Heartbeat:Connect(function()
              end
         end
         
-        -- Handle Visuals Update
         if Config.Visuals.Enabled then
             updateESP()
         else
-            -- Cleanup if disabled
             for player, data in pairs(ESP_Table) do
                 if data.Billboard then data.Billboard.Enabled = false end
                 if data.Box then data.Box.Visible = false end
@@ -455,11 +395,10 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
-OrionLib:MakeNotification({
-	Name = "Aqwoz Hub Loaded",
-	Content = "Welcome! Press Right Control to toggle UI.",
-	Image = "rbxassetid://4483345998",
-	Time = 5
+-- Notify loaded
+Rayfield:Notify({
+   Title = "Aqwoz Hub Loaded",
+   Content = "Welcome! Press Right Control to toggle UI.",
+   Duration = 6.5,
+   Image = 4483345998,
 })
-
-OrionLib:Init()
