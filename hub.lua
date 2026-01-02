@@ -407,6 +407,7 @@ local function autoClick()
             end)
             
             if lobbySafe then
+                -- User Logic: Priority to mouse1click, fallback to VIM
                 if mouse1click then
                     mouse1click()
                 elseif vim then
@@ -542,6 +543,7 @@ UserInputService.InputBegan:Connect(function(input, isProcessed)
         if not isLeftMouseDown then
             isLeftMouseDown = true
             -- Only fire if silent aim is valid and not clicking UI
+            -- User Logic: check 'not isProcessed' (handled by caller logic typically, but ensuring strict check)
             if Config.SilentAim and not isProcessed then 
                  autoClick() 
             end 
