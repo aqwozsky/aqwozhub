@@ -84,11 +84,34 @@ local function create_ui()
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Parent = TitleBar
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+    TitleLabel.Size = UDim2.new(1, -60, 1, 0) -- Adjusted for buttons
+    TitleLabel.Position = UDim2.new(0, 10, 0, 0)
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = "Aqwoz Hub"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextSize = 18
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Parent = TitleBar
+    CloseButton.BackgroundTransparency = 1
+    CloseButton.Position = UDim2.new(1, -30, 0, 0)
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.Text = "X"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextSize = 16
+    CloseButton.MouseButton1Click:Connect(function() ScreenGui.Enabled = false end)
+
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Parent = TitleBar
+    MinimizeButton.BackgroundTransparency = 1
+    MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeButton.Font = Enum.Font.GothamBold
+    MinimizeButton.Text = "-"
+    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizeButton.TextSize = 18
 
     -- Navigation (Sidebar)
     local Sidebar = Instance.new("Frame")
@@ -104,6 +127,23 @@ local function create_ui()
     ContentArea.BackgroundTransparency = 1
     ContentArea.Position = UDim2.new(0, 130, 0, 40)
     ContentArea.Size = UDim2.new(1, -140, 1, -50)
+
+    -- Minimize Logic
+    local minimized = false
+    MinimizeButton.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            MainFrame.Size = UDim2.new(0, 500, 0, 30)
+            Sidebar.Visible = false
+            ContentArea.Visible = false
+            MinimizeButton.Text = "+"
+        else
+            MainFrame.Size = UDim2.new(0, 500, 0, 350)
+            Sidebar.Visible = true
+            ContentArea.Visible = true
+            MinimizeButton.Text = "-"
+        end
+    end)
 
     -- Tabs Storage
     local Tabs = {}
@@ -467,7 +507,7 @@ UserInputService.InputBegan:Connect(function(input, isProcessed)
             isRightMouseDown = true
             if Config.SilentAim then autoClick() end
         end
-    elseif input.KeyCode == Enum.KeyCode.RightControl then
+    elseif input.KeyCode == Enum.KeyCode.RightShift then
         if CoreGui:FindFirstChild("AqwozHub") then
             CoreGui.AqwozHub.Enabled = not CoreGui.AqwozHub.Enabled
         elseif localPlayer.PlayerGui:FindFirstChild("AqwozHub") then
