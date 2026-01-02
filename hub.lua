@@ -290,7 +290,7 @@ local function create_ui()
 
     -- Visuals Items
     CreateToggle(VisualsPage, "Enabled", function(val) Config.Visuals.Enabled = val end, false)
-    CreateToggle(VisualsPage, "Boxes", function(val) Config.Visuals.Boxes = val end, false)
+    CreateToggle(VisualsPage, "Chams (Highlights)", function(val) Config.Visuals.Boxes = val end, false)
     CreateToggle(VisualsPage, "Names", function(val) Config.Visuals.Names = val end, false)
     CreateToggle(VisualsPage, "Health Based Color", function(val) Config.Visuals.Health = val end, false)
     CreateToggle(VisualsPage, "Hide Teammates", function(val) Config.Visuals.TeamCheck = val end, false)
@@ -442,23 +442,25 @@ local function updateESP()
                  local txt = Instance.new("TextLabel", billboard)
                  txt.BackgroundTransparency = 1
                  txt.Size = UDim2.new(1, 0, 1, 0)
-                 txt.TextStrokeTransparency = 0
+                 txt.TextStrokeTransparency = 0.5
+                 txt.TextStrokeColor3 = Color3.new(0,0,0)
                  txt.TextColor3 = Color3.new(1, 1, 1)
+                 txt.Font = Enum.Font.GothamBold -- Modern font
+                 txt.TextSize = 14
                  txt.Text = player.Name
              end
              
-             -- BOX
-             local existingBox = ESP_Folder:FindFirstChild(boxName)
-             if not existingBox and Config.Visuals.Enabled and Config.Visuals.Boxes then
-                 existingBox = Instance.new("BoxHandleAdornment")
-                 existingBox.Name = boxName
-                 existingBox.Parent = ESP_Folder
-                 existingBox.Adornee = player.Character
-                 existingBox.AlwaysOnTop = true
-                 existingBox.ZIndex = 5
-                 existingBox.Size = Vector3.new(4, 5, 1)
-                 existingBox.Transparency = 0.5
-                 existingBox.Color3 = Color3.fromRGB(0, 170, 255)
+             -- HIGHLIGHT (Chams)
+             local existingHighlight = player.Character:FindFirstChild(boxName)
+             if not existingHighlight and Config.Visuals.Enabled and Config.Visuals.Boxes then
+                 existingHighlight = Instance.new("Highlight")
+                 existingHighlight.Name = boxName
+                 existingHighlight.Adornee = player.Character
+                 existingHighlight.Parent = player.Character
+                 existingHighlight.FillColor = Color3.fromRGB(0, 170, 255)
+                 existingHighlight.FillTransparency = 0.5
+                 existingHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                 existingHighlight.OutlineTransparency = 0
              end
 
              local show = Config.Visuals.Enabled
@@ -478,16 +480,13 @@ local function updateESP()
                  end
              end
              
-             -- Update Box Visibility
-             if existingBox then
-                 existingBox.Visible = show and Config.Visuals.Boxes
-                 existingBox.Adornee = player.Character -- ensure it sticks if respawned
+             -- Update Highlight Visibility
+             if existingHighlight then
+                 existingHighlight.Enabled = show and Config.Visuals.Boxes
              end
         else
-            -- Cleanup loose boxes for invalid players
-            local boxName = player.Name .. "_ESP_Box"
-            local existingBox = ESP_Folder:FindFirstChild(boxName)
-            if existingBox then existingBox:Destroy() end
+            -- Cleanup logic remains handled by parent garbage collection mostly, 
+            -- but Highlights stay on character so they die with character.
         end
     end
 end
