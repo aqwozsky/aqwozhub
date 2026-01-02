@@ -282,7 +282,7 @@ local function create_ui()
     
     -- Combat Items
     CreateToggle(CombatPage, "Silent Aim (Right Click)", function(val) Config.SilentAim = val end, false)
-    CreateToggle(CombatPage, "Aimlock", function(val) 
+    CreateToggle(CombatPage, "Aimlock (Hold Right Click)", function(val) 
         Config.Aimlock = val 
         if not val then targetPlayer = nil end
     end, false)
@@ -570,15 +570,15 @@ end)
 
 -- Aimlock Loop (RenderStepped for smoother camera)
 RunService.RenderStepped:Connect(function()
-    if Config.Aimlock then
-         -- Constant check to keep locking current target
-         if not targetPlayer or (targetPlayer and (not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("Head"))) then
-             targetPlayer = getClosestPlayerToMouse()
-         end
+    if Config.Aimlock and isRightMouseDown then
+         -- Constantly update target to the one closest to mouse (allows switching)
+         targetPlayer = getClosestPlayerToMouse()
          
          if targetPlayer then 
              lockCameraToHead() 
          end
+    else
+        targetPlayer = nil -- Reset when not aiming
     end
 end)
 
